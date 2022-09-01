@@ -46,11 +46,12 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 
 		maxLen = -1
 		colInfo, ok := colInfo[v.Name()]
+		comment := ""
 		if ok {
 			nullable = colInfo.IsNullable == "YES"
 			isAutoIncrement = colInfo.IsIdentity == "YES"
 			isPrimaryKey = colInfo.PrimaryKey
-
+			comment = colInfo.Comment
 			if colInfo.ColumnDefault != nil {
 				defaultVal = cleanupDefault(fmt.Sprintf("%v", colInfo.ColumnDefault))
 			}
@@ -79,6 +80,7 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 			columnLen:        maxLen,
 			columnType:       definedType,
 			defaultVal:       defaultVal,
+			comment:          comment,
 		}
 
 		m.columns[i] = colMeta

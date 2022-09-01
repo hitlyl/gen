@@ -100,6 +100,7 @@ type PostgresInformationSchema struct {
 	IsNullable             string
 	IsIdentity             string
 	PrimaryKey             bool
+	Comment                string
 }
 
 // LoadTableInfoFromPostgresInformationSchema fetch info from information_schema for postgres database
@@ -107,11 +108,23 @@ func LoadTableInfoFromPostgresInformationSchema(db *sql.DB, tableName string) (p
 	colInfo := make(map[string]*PostgresInformationSchema)
 
 	identitySQL := fmt.Sprintf(`
-SELECT TABLE_CATALOG, table_schema, table_name, ordinal_position, column_name, data_type, character_maximum_length,
-column_default, is_nullable, is_identity 
-FROM information_schema.columns
-WHERE table_name = '%s' 
-ORDER BY table_name, ordinal_position;
+SELECT t.TABLE_CATALOG, t.table_schema, t.table_name, t.ordinal_position, t.column_name, t.data_type, 
+t.character_maximum_length,
+t.column_default, t.is_nullable, t.is_identity ,(SELECT
+    col_description ( a.attrelid, a.attnum ) AS COMMENT
+FROM
+    pg_class AS c,
+    pg_attribute AS a
+WHERE
+        c.relname =t.table_name
+  AND a.attname=t.column_name												
+  AND a.attrelid = c.oid
+  AND a.attnum >0
+	LIMIT 1											 
+  ) as comment
+FROM information_schema.columns t where t.table_name = '%s' 
+ORDER BY t.table_name, t.ordinal_position;
+
 `, tableName)
 
 	res, err := db.Query(identitySQL)
@@ -122,7 +135,7 @@ ORDER BY table_name, ordinal_position;
 	for res.Next() {
 		ci := &PostgresInformationSchema{}
 		err = res.Scan(&ci.TableCatalog, &ci.TableSchema, &ci.TableName, &ci.OrdinalPosition, &ci.ColumnName, &ci.DataType, &ci.CharacterMaximumLength,
-			&ci.ColumnDefault, &ci.IsNullable, &ci.IsIdentity)
+			&ci.ColumnDefault, &ci.IsNullable, &ci.IsIdentity, &ci.Comment)
 		if err != nil {
 			return nil, fmt.Errorf("unable to load identity info from postgres Scan: %v", err)
 		}
