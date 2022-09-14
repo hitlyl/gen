@@ -45,12 +45,16 @@ var replaceFuncMap = template.FuncMap{
 	"toSnakeCase":        snaker.CamelToSnake,
 	"StringsJoin":        strings.Join,
 	"replace":            replace,
+	"replace1st":         replace1st,
 	"stringifyFirstChar": stringifyFirstChar,
 	"FmtFieldName":       FmtFieldName,
 }
 
 func replace(input, from, to string) string {
 	return strings.Replace(input, from, to, -1)
+}
+func replace1st(input, from, to string) string {
+	return strings.Replace(input, from, to, 1)
 }
 
 // Replace takes a template based name format and will render a name using it

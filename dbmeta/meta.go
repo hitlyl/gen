@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/bxcodec/faker/v3"
+	"github.com/iancoleman/strcase"
+	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,10 +15,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/bxcodec/faker/v3"
-	"github.com/iancoleman/strcase"
-	dynamicstruct "github.com/ompluscator/dynamic-struct"
 )
 
 type metaDataLoader func(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTableMeta, error)

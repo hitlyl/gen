@@ -110,20 +110,21 @@ func LoadTableInfoFromPostgresInformationSchema(db *sql.DB, tableName string) (p
 	identitySQL := fmt.Sprintf(`
 SELECT t.TABLE_CATALOG, t.table_schema, t.table_name, t.ordinal_position, t.column_name, t.data_type, 
 t.character_maximum_length,
-t.column_default, t.is_nullable, t.is_identity ,(SELECT
+t.column_default, t.is_nullable, t.is_identity ,(select COALESCE((SELECT
     col_description ( a.attrelid, a.attnum ) AS COMMENT
 FROM
     pg_class AS c,
     pg_attribute AS a
 WHERE
         c.relname =t.table_name
-  AND a.attname=t.column_name												
+  AND a.attname=t.column_name            
   AND a.attrelid = c.oid
   AND a.attnum >0
-	LIMIT 1											 
-  ) as comment
+ LIMIT 1            
+  ),t.column_name)) as comment
 FROM information_schema.columns t where t.table_name = '%s' 
 ORDER BY t.table_name, t.ordinal_position;
+
 
 `, tableName)
 
