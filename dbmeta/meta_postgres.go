@@ -2,6 +2,7 @@ package dbmeta
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,7 +23,7 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 			return nil, err
 		}
 	}
-	m.columns = make([]*columnMeta, len(cols))
+	m.columns = make([]*columnMeta, 0)
 
 	colInfo, err := LoadTableInfoFromPostgresInformationSchema(db, tableName)
 	if err != nil {
@@ -33,8 +34,8 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 	if err != nil {
 		return nil, fmt.Errorf("unable to load primary key from postgres: %v", err)
 	}
-
-	for i, v := range cols {
+	i := 0
+	for _, v := range cols {
 		defaultVal := ""
 		nullable, ok := v.Nullable()
 		if !ok {
@@ -47,7 +48,16 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 		maxLen = -1
 		colInfo, ok := colInfo[v.Name()]
 		comment := ""
+		if v.DatabaseTypeName() == "TSVECTOR" {
+			continue
+		}
+
 		if ok {
+
+			if strings.ToLower(colInfo.DataType) == "tsvector" {
+				continue
+			}
+
 			nullable = colInfo.IsNullable == "YES"
 			isAutoIncrement = colInfo.IsIdentity == "YES"
 			isPrimaryKey = colInfo.PrimaryKey
@@ -83,9 +93,11 @@ func LoadPostgresMeta(db *sql.DB, sqlType, sqlDatabase, tableName string) (DbTab
 			comment:          comment,
 		}
 
-		m.columns[i] = colMeta
+		m.columns = append(m.columns, colMeta)
+		i++
 	}
-
+	buf, _ := json.Marshal(m.columns)
+	fmt.Printf("debug  %s\n", string(buf))
 	m.ddl = BuildDefaultTableDDL(tableName, m.columns)
 	m = updateDefaultPrimaryKey(m)
 
