@@ -140,6 +140,9 @@ ORDER BY t.table_name, t.ordinal_position;
 		if err != nil {
 			return nil, fmt.Errorf("unable to load identity info from postgres Scan: %v", err)
 		}
+		if ci.DataType == "tsvector" {
+			continue
+		}
 
 		colInfo[ci.ColumnName] = ci
 	}
